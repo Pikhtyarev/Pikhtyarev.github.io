@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySelect</title>
+</head>
+<body>
+<my-select></my-select>
+
+<script>
+    const onLoad = (evt) => {
+        console.log('evt', evt)
+    }
+
+    const onError = (err) => {
+        console.log('err', err)
+    }
+
+    const components = ['my-select'];
+
+    components.forEach(component => {
+        const script = document.createElement('script');
+        script.src = `./${component}.js`;
+        script.dataset.name = component;
+        script.addEventListener('load', onLoad);
+        script.addEventListener('error', onError);
+        document.body.append(script);
+    });
+</script>
+</body>
+</html>
