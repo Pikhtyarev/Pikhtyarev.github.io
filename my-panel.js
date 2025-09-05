@@ -2,6 +2,8 @@ class MyPanel extends HTMLElement {
     #shadow;
     #isOpen = true;
 
+    static observedAttributes = ['header', 'sub-header'];
+
     constructor() {
         super();
     }
@@ -12,8 +14,16 @@ class MyPanel extends HTMLElement {
         this.#addToggleHandler();
     }
 
+    attributeChangedCallback(name, oldValue, newValue) {
+        if (this.#shadow) {
+            this.#updateAttribute(name, newValue);
+        }
+    }
+
+
     #render() {
         const header = this.getAttribute('header');
+        const subHeader = this.getAttribute('sub-header')
         const currentDate = new Date().toLocaleDateString('ru-RU');
 
         this.#shadow.innerHTML = `
@@ -39,6 +49,19 @@ class MyPanel extends HTMLElement {
                     font-weight: bold;
                     font-size: 18px;
                     color: #2F4F4F;
+                }
+                
+                .panel-header-content {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                }
+                
+                .panel-subheader {
+                    font-size: 14px;
+                    font-weight: normal;
+                    color: #8e8e8e;
+                    margin: 0;
                 }
                 
                 .panel-footer {
@@ -70,7 +93,10 @@ class MyPanel extends HTMLElement {
             
             <div class="panel">
                 <div class="panel-header">
-                    <span>${header}</span>
+                    <div class="panel-header-content">
+                        <span class="panel-title">${header}</span>
+                        ${subHeader ? `<span class="panel-subheader">${subHeader}</span>` : ''}
+                    </div>
                     <button class="toggle-button">-</button>
                 </div>
                 
@@ -83,6 +109,35 @@ class MyPanel extends HTMLElement {
                 </div>
             </div>
         `;
+    }
+
+    #updateAttribute(name, value) {
+        if (name === 'header') {
+            const titleElement = this.#shadow.querySelector('.panel-title');
+            if (titleElement) {
+                titleElement.textContent = value || '';
+            }
+        } else if (name === 'sub-header') {
+            let subHeaderElement = this.#shadow.querySelector('.panel-subheader');
+
+            if (value) {
+                if (!subHeaderElement) {
+                    const headerContent = this.#shadow.querySelector('.panel-header-content');
+                    if (headerContent) {
+                        subHeaderElement = document.createElement('span');
+                        subHeaderElement.className = 'panel-subheader';
+                        headerContent.appendChild(subHeaderElement);
+                    }
+                }
+                if (subHeaderElement) {
+                    subHeaderElement.textContent = value;
+                }
+            } else {
+                if (subHeaderElement) {
+                    subHeaderElement.remove();
+                }
+            }
+        }
     }
 
     #addToggleHandler() {
