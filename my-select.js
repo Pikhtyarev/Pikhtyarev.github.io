@@ -151,7 +151,6 @@ class MySelect extends HTMLElement {
         this.#selectButton.addEventListener('click', () => this.#openPopup());
         this.#selectPopupSearch.addEventListener('input', (e) => this.#filterOptions(e.target.value));
         
-        // Закрываем попап при клике вне селекта
         document.addEventListener('click', (e) => {
             if (!this.contains(e.target)) {
                 this.#closePopup();
