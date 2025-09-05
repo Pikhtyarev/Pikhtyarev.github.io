@@ -23,9 +23,6 @@ class MySelect extends HTMLElement {
         } else {
             this.#selectedValues = [];
         }
-        if (this.#selectionCounter) {
-            this.#updateButtonText();
-        }
     }
 
     connectedCallback() {
@@ -46,8 +43,6 @@ class MySelect extends HTMLElement {
         this.#optionsBox.replaceWith(builtOptionsBox);
         this.#optionsBox = builtOptionsBox;
         optionElements.forEach((el) => el.remove());
-    
-        this.#updateButtonText();
     }
 
     #createTemplate() {
