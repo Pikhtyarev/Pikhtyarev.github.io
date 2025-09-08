@@ -70,43 +70,22 @@
         const spinner = document.getElementById('spinner');
         const result = document.getElementById('result');
         let worker = null;
-        let workerReady = false;
-        let pendingTimeout = null;
-        const bc = new BroadcastChannel('test_channel');
-
-        bc.onmessage = (evt) => {
-            const data = evt.data;
-            if (data.type === 'ready') {
-                workerReady = true;
-                if (pendingTimeout !== null) {
-                    bc.postMessage({ type: 'run', timeout: pendingTimeout });
-                    pendingTimeout = null;
-                }
-                return;
-            }
-            if (data.type === 'result') {
-                spinner.classList.remove('show');
-                startButton.disabled = false;
-                startButton.textContent = 'Запустить процесс';
-                result.innerHTML = `Результат: ${data.result}`;
-            }
-        };
 
         startButton.addEventListener('click', () => {
             spinner.classList.add('show');
             startButton.disabled = true;
             startButton.textContent = 'Вычисляем...';
 
-            if (!worker) {
-                worker = new Worker('./thread.js');
-            }
+            worker = new Worker('./thread.js');
 
-            const timeout = 3000;
-            if (workerReady) {
-                bc.postMessage({ type: 'run', timeout });
-            } else {
-                pendingTimeout = timeout;
-            }
+            worker.addEventListener('message', (evt) => {
+                spinner.classList.remove('show');
+                startButton.disabled = false;
+                startButton.textContent = 'Запустить процесс';
+                result.innerHTML = `Результат: ${evt.data}`;
+            });
+
+            worker.postMessage({ timeout: 3000 });
         });
     </script>
 </body>
