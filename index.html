@@ -50,9 +50,10 @@
 </head>
 <body>
     <div class="container">
-        <h1>Web Workers</h1>
+        <h1>Service Worker</h1>
         
-        <button id="start">Запустить процесс</button>
+        <button id="start">Start</button>
+        <button id="unregister">Unregister Service Worker</button>
         
         <div class="spinner-container">
             <div class="spinner" id="spinner">
@@ -62,31 +63,69 @@
             </div>
         </div>
         
-        <div id="result">Нажмите кнопку для запуска вычислений</div>
+        <div id="result">Загрузка...</div>
     </div>
 
     <script>
+        const getServiceWorker = async (scriptURL, options) => {
+            if ("serviceWorker" in navigator) {
+                try {
+                    let registration = await navigator.serviceWorker.getRegistration();
+                    if (!registration) {
+                        registration = await navigator.serviceWorker.register(scriptURL, options);
+                        await navigator.serviceWorker.ready;
+                    }
+                    return {
+                        registration: registration,
+                        container: navigator.serviceWorker,
+                        controller: registration.active,
+                        addEventListener: navigator.serviceWorker.addEventListener.bind(navigator.serviceWorker),
+                        postMessage: registration.active.postMessage.bind(registration.active)
+                    };
+                } catch (error) {
+                    console.error(`Registration failed with ${error}`);
+                }
+            }
+        };
+
         const startButton = document.getElementById('start');
+        const unregisterButton = document.getElementById('unregister');
         const spinner = document.getElementById('spinner');
         const result = document.getElementById('result');
-        let worker = null;
+        let serviceWorker = null;
 
-        startButton.addEventListener('click', () => {
+        const updateResult = (data, cached) => {
+            spinner.classList.remove('show');
+            startButton.disabled = false;
+            startButton.textContent = 'Start';
+            result.innerHTML = `Результат: ${data} ${cached ? '(из кеша)' : '(новый)'}`;
+        };
+
+        const startCalculation = () => {
             spinner.classList.add('show');
             startButton.disabled = true;
             startButton.textContent = 'Вычисляем...';
+            serviceWorker.postMessage({ type: 'RECALCULATE', timeout: 3000 });
+        };
 
-            worker = new Worker('./thread.js');
+        (async () => {
+            serviceWorker = await getServiceWorker("./thread.js", { scope: "./" });
 
-            worker.addEventListener('message', (evt) => {
-                spinner.classList.remove('show');
-                startButton.disabled = false;
-                startButton.textContent = 'Запустить процесс';
-                result.innerHTML = `Результат: ${evt.data}`;
+            serviceWorker.addEventListener('message', (evt) => {
+                if (evt.data.type === 'RESULT') {
+                    updateResult(evt.data.data, evt.data.cached);
+                }
             });
 
-            worker.postMessage({ timeout: 3000 });
-        });
+            startButton.addEventListener('click', startCalculation);
+            
+            unregisterButton.addEventListener('click', async () => {
+                await serviceWorker.registration.unregister();
+                location.reload();
+            });
+
+            serviceWorker.postMessage({ type: 'GET_CACHED', timeout: 3000 });
+        })();
     </script>
 </body>
 </html>
