@@ -3,30 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MySelect</title>
+    <title>Web Workers</title>
+    <style>
+        button {
+            color: red;
+            font-size: 18px;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .spinner {
+            display: none;
+        }
+
+        .spinner.show {
+            display: block;
+        }
+
+        @keyframes spinner {
+            0% {
+                transform: scale(.1) rotate(0deg);
+                fill: currentColor;
+            }
+
+            33% {
+                transform: scale(1) rotate(150deg);
+                fill: transparent;
+            }
+
+            66% {
+                transform: scale(1) rotate(210deg);
+                fill: transparent;
+            }
+
+            100% {
+                transform: scale(.1) rotate(360deg);
+                fill: currentColor;
+            }
+        }
+
+        .spinner svg {
+            animation: spinner 1.5s infinite linear;
+            color: rgb(6, 75, 67);
+        }
+    </style>
 </head>
 <body>
-<my-select></my-select>
+    <div class="container">
+        <h1>Service Worker</h1>
+        
+        <button id="start">Start</button>
+        <button id="unregister">Unregister Service Worker</button>
+        
+        <div class="spinner-container">
+            <div class="spinner" id="spinner">
+                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="56" fill="none">
+                    <path stroke="currentColor" stroke-width="4" d="M3.464 30a4 4 0 0 1 0-4L16 4.287a4 4 0 0 1 3.464-2h25.072a4 4 0 0 1 3.464 2L60.536 26a4 4 0 0 1 0 4L48 51.713a4 4 0 0 1-3.464 2H19.464a4 4 0 0 1-3.464-2L3.464 30Z"/>
+                </svg>
+            </div>
+        </div>
+        
+        <div id="result">Загрузка...</div>
+    </div>
 
-<script>
-    const onLoad = (evt) => {
-        console.log('evt', evt)
-    }
+    <script>
+        const getServiceWorker = async (scriptURL, options) => {
+            if ("serviceWorker" in navigator) {
+                try {
+                    let registration = await navigator.serviceWorker.getRegistration();
+                    if (!registration) {
+                        registration = await navigator.serviceWorker.register(scriptURL, options);
+                        await navigator.serviceWorker.ready;
+                    }
+                    return {
+                        registration: registration,
+                        container: navigator.serviceWorker,
+                        controller: registration.active,
+                        addEventListener: navigator.serviceWorker.addEventListener.bind(navigator.serviceWorker),
+                        postMessage: registration.active.postMessage.bind(registration.active)
+                    };
+                } catch (error) {
+                    console.error(`Registration failed with ${error}`);
+                }
+            }
+        };
 
-    const onError = (err) => {
-        console.log('err', err)
-    }
+        const startButton = document.getElementById('start');
+        const unregisterButton = document.getElementById('unregister');
+        const spinner = document.getElementById('spinner');
+        const result = document.getElementById('result');
+        let serviceWorker = null;
 
-    const components = ['my-select'];
+        const updateResult = (data, cached) => {
+            spinner.classList.remove('show');
+            startButton.disabled = false;
+            startButton.textContent = 'Start';
+            result.innerHTML = `Результат: ${data} ${cached ? '(из кеша)' : '(новый)'}`;
+        };
 
-    components.forEach(component => {
-        const script = document.createElement('script');
-        script.src = `./${component}.js`;
-        script.dataset.name = component;
-        script.addEventListener('load', onLoad);
-        script.addEventListener('error', onError);
-        document.body.append(script);
-    });
-</script>
+        const startCalculation = () => {
+            spinner.classList.add('show');
+            startButton.disabled = true;
+            startButton.textContent = 'Вычисляем...';
+            serviceWorker.postMessage({ type: 'RECALCULATE', timeout: 3000 });
+        };
+
+        (async () => {
+            serviceWorker = await getServiceWorker("./thread.js", { scope: "./" });
+
+            serviceWorker.addEventListener('message', (evt) => {
+                if (evt.data.type === 'RESULT') {
+                    updateResult(evt.data.data, evt.data.cached);
+                }
+            });
+
+            startButton.addEventListener('click', startCalculation);
+            
+            unregisterButton.addEventListener('click', async () => {
+                await serviceWorker.registration.unregister();
+                location.reload();
+            });
+
+            serviceWorker.postMessage({ type: 'GET_CACHED', timeout: 3000 });
+        })();
+    </script>
 </body>
 </html>
