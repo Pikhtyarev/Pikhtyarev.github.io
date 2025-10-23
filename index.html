@@ -49,6 +49,14 @@
     </style>
 </head>
 <body>
+    <my-panel header="Панель с селектом" sub-header="" toggleable>
+        <my-select>
+            <option value="opt1">Option 1</option>
+            <option value="opt2">Option 2</option>
+            <option value="opt3">Option 3</option>
+        </my-select>
+    </my-panel>
+
     <div class="container">
         <h1>Service Worker</h1>
         
@@ -67,6 +75,43 @@
     </div>
 
     <script>
+        const onLoad = (evt) => {
+            animateSubHeader();
+            console.log('evt', evt)
+        }
+
+        const onError = (err) => {
+            console.log('err', err)
+        }
+
+        const components = ['my-select', 'my-panel'];
+
+        components.forEach(component => {
+            const script = document.createElement('script');
+            script.src = `./${component}.js`;
+            script.dataset.name = component;
+            script.addEventListener('load', onLoad);
+            script.addEventListener('error', onError);
+            document.body.append(script);
+        });
+
+        function animateSubHeader() {
+            const panel = document.querySelector('my-panel');
+            const fullText = 'Подзаголовок селекта';
+            let currentText = '';
+            let index = 0;
+
+            const interval = setInterval(() => {
+                if (index < fullText.length) {
+                    currentText += fullText[index];
+                    panel.setAttribute('sub-header', currentText);
+                    index++;
+                } else {
+                    clearInterval(interval);
+                }
+            }, 200);
+        };
+
         const getServiceWorker = async (scriptURL, options) => {
             if ("serviceWorker" in navigator) {
                 try {
