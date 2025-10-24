@@ -14,7 +14,7 @@ class MySelect extends HTMLElement {
     }
 
     get value() {
-        return this.#selectedValues.join(',');
+        return this.#selectedValues.join(', ');
     }
 
     set value(newValue) {
@@ -188,7 +188,7 @@ class MySelect extends HTMLElement {
     }
 
     #updateText() {
-        this.#selectionCounter.textContent = `Выбрано: ${this.#selectedValues.length}`;
+        this.#selectionCounter.textContent = `Выбрано: ${this.value || '0'}`;
     }
 
     #renderOptions(options) {
