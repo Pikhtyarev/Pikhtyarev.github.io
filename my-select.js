@@ -220,6 +220,7 @@ class MySelect extends HTMLElement {
 }
 
 const currentScript = document.currentScript;
+
 const componentName = currentScript.dataset.name;
 
 customElements.define(componentName, MySelect);
